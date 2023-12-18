@@ -10,7 +10,7 @@ Include thhis code in your WebApi startup builder:
 
 ```
 builder.AddClientCredentialsKeypairs()
-    .AddRefitClient<ISysvakApiBackgroundClient>();
+    .AddRefitClient<IMyRefitClient>();
 ```
 
 If you want to add additional loggers add them before "AddRefitClient": 
@@ -18,14 +18,14 @@ If you want to add additional loggers add them before "AddRefitClient":
 ```
 builder.AddClientCredentialsKeypairs()
     .AddHandler<MyLoggingDelegationHandler>()
-    .AddRefitClient<ISysvakApiBackgroundClient>();
+    .AddRefitClient<IMyRefitClient>();
 ```
 The code loads your configuration from IConfiguration using the section "ClientCredentialsConfiguration".
 If you want to override which section to use you can pass the correct section to AddClientCredentialsKeypairs:
 
 ```
 builder.AddClientCredentialsKeypairs("CustomClientCredentialsConfiguration")
-    .AddRefitClient<ISysvakApiBackgroundClient>();
+    .AddRefitClient<IMyRefitClient>();
 ```
 
 The default RefitSettings we are using use SystemTextJsonContentSerializer, is case insensitive and use camelCasing.
@@ -33,5 +33,5 @@ If you want to override the default RefitSettings to use you can pass the settin
 
 ```
 builder.AddClientCredentialsKeypairs(new RefitSettings())
-    .AddRefitClient<ISysvakApiBackgroundClient>();
+    .AddRefitClient<IMyRefitClient>();
 ```
