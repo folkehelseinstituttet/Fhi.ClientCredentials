@@ -6,7 +6,7 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
 {
     public static class WebApplicationBuilderExtensions
     {
-        public static RefitClientCredentialsBuilder AddClientCredentialsKeypairs(this WebApplicationBuilder builder, string? configSection = null, RefitSettings? refitSettings = null)
+        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this WebApplicationBuilder builder, string? configSection = null, RefitSettings? refitSettings = null)
         {
             var configuration = builder.Configuration
                 .GetSection(configSection ?? nameof(ClientCredentialsConfiguration))
@@ -15,7 +15,7 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
             return new RefitClientCredentialsBuilder(builder, configuration, refitSettings);
         }
 
-        public static RefitClientCredentialsBuilder AddClientCredentialsKeypairs(this WebApplicationBuilder builder, RefitSettings? refitSettings = null)
+        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this WebApplicationBuilder builder, RefitSettings? refitSettings = null)
         {
             var configuration = builder.Configuration
                 .GetSection(nameof(ClientCredentialsConfiguration))

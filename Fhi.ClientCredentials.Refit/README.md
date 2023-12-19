@@ -9,14 +9,14 @@ This default setup will add a token handler to your Refit Interface in addition 
 Include thhis code in your WebApi startup builder:
 
 ```
-builder.AddClientCredentialsKeypairs()
+builder.AddClientCredentialsRefitBuilder()
     .AddRefitClient<IMyRefitClient>();
 ```
 
 If you want to add additional loggers add them before "AddRefitClient": 
 
 ```
-builder.AddClientCredentialsKeypairs()
+builder.AddClientCredentialsRefitBuilder()
     .AddHandler<MyLoggingDelegationHandler>()
     .AddRefitClient<IMyRefitClient>();
 ```
@@ -24,7 +24,7 @@ The code loads your configuration from IConfiguration using the section "ClientC
 If you want to override which section to use you can pass the correct section to AddClientCredentialsKeypairs:
 
 ```
-builder.AddClientCredentialsKeypairs("CustomClientCredentialsConfiguration")
+builder.AddClientCredentialsRefitBuilder("CustomClientCredentialsConfiguration")
     .AddRefitClient<IMyRefitClient>();
 ```
 
@@ -32,6 +32,23 @@ The default RefitSettings we are using use SystemTextJsonContentSerializer, is c
 If you want to override the default RefitSettings to use you can pass the settings to AddClientCredentialsKeypairs:
 
 ```
-builder.AddClientCredentialsKeypairs(new RefitSettings())
+builder.AddClientCredentialsRefitBuilder(new RefitSettings())
     .AddRefitClient<IMyRefitClient>();
+```
+
+## Adding Correlation Id to all requests
+
+Use "AddCorrelationId()" to add header propagation of the default FHI correlation id header. 
+
+```
+builder.AddClientCredentialsRefitBuilder()
+    .AddCorrelationId()
+    .AddRefitClient<IMyRefitClient>();
+```
+
+A new correlation ID will be given to each request and response that does not contain the header when invoked.
+Remember to add usage of header propagation to your app startup code:
+
+```
+app.UseHeaderPropagation();
 ```

@@ -40,13 +40,30 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
             return this;
         }
 
+        /// <summary>
+        /// Adds propagation and handling of correlation ids. You should add this before any logging-delagates. Remember to add "app.UseHeaderPropagation()" in your startup code
+        /// </summary>
+        /// <returns></returns>
+        public RefitClientCredentialsBuilder AddCorrelationId()
+        {
+            AddHandler<CorrelationIdHandler>();
+
+            builder.Services.AddHeaderPropagation(o =>
+            {
+                o.Headers.Add(CorrelationIdHandler.CorrelationIdHeaderName, context => string.IsNullOrEmpty(context.HeaderValue) ? Guid.NewGuid().ToString() : context.HeaderValue);
+            });
+
+            return this;
+        }
+
         public RefitClientCredentialsBuilder AddRefitClient<T>(string? nameOfService = null, Func<IHttpClientBuilder, IHttpClientBuilder>? extra = null) where T : class
         {
             var clientBuilder = builder.Services.AddRefitClient<T>(RefitSettings)
                 .ConfigureHttpClient(httpClient =>
                 {
                     httpClient.BaseAddress = config.UriToApiByName(nameOfService ?? typeof(T).Name);
-                });
+                })
+                .AddHeaderPropagation();
 
             foreach (var type in DelegationHandlers)
             {
