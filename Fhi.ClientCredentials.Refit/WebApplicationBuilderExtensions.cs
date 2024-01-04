@@ -16,15 +16,6 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
             return new RefitClientCredentialsBuilder(builder.Services, configuration, refitSettings);
         }
 
-        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this WebApplicationBuilder builder, RefitSettings? refitSettings = null)
-        {
-            var configuration = builder.Configuration
-                .GetSection(nameof(ClientCredentialsConfiguration))
-                .Get<ClientCredentialsConfiguration>();
-
-            return new RefitClientCredentialsBuilder(builder.Services, configuration, refitSettings);
-        }
-
         public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, ClientCredentialsConfiguration configuration, RefitSettings? refitSettings = null)
         {
             return new RefitClientCredentialsBuilder(services, configuration, refitSettings);
