@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Refit;
+using Fhi.ClientCredentials.Refit;
 
 namespace Fhi.ClientCredentialsKeypairs.Refit
 {
@@ -19,6 +20,29 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
         public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, ClientCredentialsConfiguration configuration, RefitSettings? refitSettings = null)
         {
             return new RefitClientCredentialsBuilder(services, configuration, refitSettings);
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="app"></param>
+        /// <returns></returns>
+        public static WebApplication UseCorrelationId(this WebApplication app)
+        {
+            var options = app.Services.GetService<RefitClientCredentialsBuilderOptions>();
+            if (options == null)
+            {
+                throw new Exception("You need to call builder.AddHelseIdForBlazor() before using app.UseHelseIdForBlazor()");
+            }
+
+            if (options.UseCorrelationId)
+            {
+                app.UseMiddleware<CorrelationIdMiddleware>();
+                app.UseHeaderPropagation();
+            }
+
+            return app;
         }
     }
 }
