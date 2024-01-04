@@ -67,8 +67,12 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
                 .ConfigureHttpClient(httpClient =>
                 {
                     httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
-                })
-                .AddHeaderPropagation();
+                });
+
+            if (options.UseCorrelationId)
+            {
+                clientBuilder.AddHeaderPropagation();
+            }
 
             foreach (var type in DelegationHandlers)
             {
