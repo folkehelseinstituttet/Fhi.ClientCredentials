@@ -1,5 +1,4 @@
 ﻿using Fhi.ClientCredentials.Refit;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Refit;
 using System.Text.Json;
@@ -11,7 +10,8 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
     {
         private List<Type> DelegationHandlers = new();
         private readonly IServiceCollection services;
-        private readonly ClientCredentialsConfiguration config;
+        private readonly ClientCredentialsConfiguration clientCredentialsConfig;
+        private readonly RefitClientCredentialsBuilderOptions options = new RefitClientCredentialsBuilderOptions();
 
         public RefitSettings RefitSettings { get; set; }
 
@@ -20,10 +20,12 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
             this.RefitSettings = refitSettings ?? CreateRefitSettings();
 
             this.services = services;
-            this.config = config;
+            this.clientCredentialsConfig = config;
 
             services.AddTransient<IAuthenticationService>(_ => new AuthenticationService(config));
             services.AddSingleton<IAuthTokenStore, AuthenticationStore>();
+
+            services.AddSingleton(options);
 
             AddHandler<HttpAuthHandler>();
         }
@@ -42,11 +44,13 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
         }
 
         /// <summary>
-        /// Adds propagation and handling of correlation ids. You should add this before any logging-delagates. Remember to add "app.UseHeaderPropagation()" in your startup code
+        /// Adds propagation and handling of correlation ids. You should add this before any logging-delagates. Remember to add "app.UseCorrelationId()" in your startup code
         /// </summary>
         /// <returns></returns>
         public RefitClientCredentialsBuilder AddCorrelationId()
         {
+            options.UseCorrelationId = true;
+
             AddHandler<CorrelationIdHandler>();
 
             services.AddHeaderPropagation(o =>
@@ -62,7 +66,7 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
             var clientBuilder = services.AddRefitClient<T>(RefitSettings)
                 .ConfigureHttpClient(httpClient =>
                 {
-                    httpClient.BaseAddress = config.UriToApiByName(nameOfService ?? typeof(T).Name);
+                    httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
                 })
                 .AddHeaderPropagation();
 

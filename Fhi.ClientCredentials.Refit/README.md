@@ -50,5 +50,5 @@ A new correlation ID will be given to each request and response that does not co
 Remember to add usage of header propagation to your app startup code:
 
 ```
-app.UseHeaderPropagation();
+app.UseCorrelationId();
 ```
