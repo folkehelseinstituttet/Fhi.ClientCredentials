@@ -1,4 +1,4 @@
-﻿namespace Fhi.ClientCredentialsKeypairs;
+﻿namespace Fhi.ClientCredentials.Refit;
 
 public class CorrelationIdHandler : DelegatingHandler
 {

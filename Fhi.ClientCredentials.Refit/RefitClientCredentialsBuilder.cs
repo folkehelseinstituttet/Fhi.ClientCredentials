@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Fhi.ClientCredentials.Refit;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Refit;
 using System.Text.Json;
@@ -9,20 +10,20 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
     public class RefitClientCredentialsBuilder
     {
         private List<Type> DelegationHandlers = new();
-        private readonly WebApplicationBuilder builder;
+        private readonly IServiceCollection services;
         private readonly ClientCredentialsConfiguration config;
 
         public RefitSettings RefitSettings { get; set; }
 
-        public RefitClientCredentialsBuilder(WebApplicationBuilder builder, ClientCredentialsConfiguration config, RefitSettings? refitSettings)
+        public RefitClientCredentialsBuilder(IServiceCollection services, ClientCredentialsConfiguration config, RefitSettings? refitSettings)
         {
             this.RefitSettings = refitSettings ?? CreateRefitSettings();
 
-            this.builder = builder;
+            this.services = services;
             this.config = config;
 
-            builder.Services.AddTransient<IAuthenticationService>(_ => new AuthenticationService(config));
-            builder.Services.AddSingleton<IAuthTokenStore, AuthenticationStore>();
+            services.AddTransient<IAuthenticationService>(_ => new AuthenticationService(config));
+            services.AddSingleton<IAuthTokenStore, AuthenticationStore>();
 
             AddHandler<HttpAuthHandler>();
         }
@@ -30,7 +31,7 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
         public RefitClientCredentialsBuilder AddHandler<T>() where T : DelegatingHandler
         {
             DelegationHandlers.Add(typeof(T));
-            builder.Services.AddTransient<T>();
+            services.AddTransient<T>();
             return this;
         }
 
@@ -48,7 +49,7 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
         {
             AddHandler<CorrelationIdHandler>();
 
-            builder.Services.AddHeaderPropagation(o =>
+            services.AddHeaderPropagation(o =>
             {
                 o.Headers.Add(CorrelationIdHandler.CorrelationIdHeaderName, context => string.IsNullOrEmpty(context.HeaderValue) ? Guid.NewGuid().ToString() : context.HeaderValue);
             });
@@ -58,7 +59,7 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
 
         public RefitClientCredentialsBuilder AddRefitClient<T>(string? nameOfService = null, Func<IHttpClientBuilder, IHttpClientBuilder>? extra = null) where T : class
         {
-            var clientBuilder = builder.Services.AddRefitClient<T>(RefitSettings)
+            var clientBuilder = services.AddRefitClient<T>(RefitSettings)
                 .ConfigureHttpClient(httpClient =>
                 {
                     httpClient.BaseAddress = config.UriToApiByName(nameOfService ?? typeof(T).Name);

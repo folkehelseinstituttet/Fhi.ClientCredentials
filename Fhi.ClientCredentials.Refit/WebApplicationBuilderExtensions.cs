@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Refit;
 
 namespace Fhi.ClientCredentialsKeypairs.Refit
@@ -12,7 +13,7 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
                 .GetSection(configSection ?? nameof(ClientCredentialsConfiguration))
                 .Get<ClientCredentialsConfiguration>();
 
-            return new RefitClientCredentialsBuilder(builder, configuration, refitSettings);
+            return new RefitClientCredentialsBuilder(builder.Services, configuration, refitSettings);
         }
 
         public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this WebApplicationBuilder builder, RefitSettings? refitSettings = null)
@@ -21,7 +22,12 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
                 .GetSection(nameof(ClientCredentialsConfiguration))
                 .Get<ClientCredentialsConfiguration>();
 
-            return new RefitClientCredentialsBuilder(builder, configuration, refitSettings);
+            return new RefitClientCredentialsBuilder(builder.Services, configuration, refitSettings);
+        }
+
+        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, ClientCredentialsConfiguration configuration, RefitSettings? refitSettings = null)
+        {
+            return new RefitClientCredentialsBuilder(services, configuration, refitSettings);
         }
     }
 }
