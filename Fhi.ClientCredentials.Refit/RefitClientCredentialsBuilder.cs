@@ -69,10 +69,12 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
                     httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
                 });
 
+            /* // we can't  add header propagation to without a httpcontext
             if (options.UseCorrelationId)
             {
                 clientBuilder.AddHeaderPropagation();
             }
+            */
 
             foreach (var type in DelegationHandlers)
             {
