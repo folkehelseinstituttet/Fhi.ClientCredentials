@@ -47,8 +47,17 @@ builder.AddClientCredentialsRefitBuilder()
 ```
 
 A new correlation ID will be given to each request and response that does not contain the header when invoked.
-Remember to add usage of header propagation to your app startup code:
+Remember to add usage of header propagation to your app startup code. It should be placed before any logging middleware:
 
 ```
 app.UseCorrelationId();
+```
+
+## More!
+
+Add the handler "LoggingDelegationHandler" to automatically log all Refit requets. The logger has to be availible trough dependency injection using Microsoft.Extensions.Logging (ILogger).
+
+```
+builder.AddClientCredentialsRefitBuilder()
+    .AddHandler<LoggingDelegationHandler>();
 ```
