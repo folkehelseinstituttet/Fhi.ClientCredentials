@@ -10,11 +10,16 @@ namespace Fhi.ClientCredentials.Refit
     {
         public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this WebApplicationBuilder builder, string? configSection = null, RefitSettings? refitSettings = null)
         {
-            var configuration = builder.Configuration
+            return AddClientCredentialsRefitBuilder(builder.Services, builder.Configuration, configSection, refitSettings);
+        }
+
+        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, IConfiguration configuration, string? configSection = null, RefitSettings? refitSettings = null)
+        {
+            var config = configuration
                 .GetSection(configSection ?? nameof(ClientCredentialsConfiguration))
                 .Get<ClientCredentialsConfiguration>();
 
-            return new RefitClientCredentialsBuilder(builder.Services, configuration, refitSettings);
+            return AddClientCredentialsRefitBuilder(services, config, refitSettings);
         }
 
         public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, ClientCredentialsConfiguration configuration, RefitSettings? refitSettings = null)
