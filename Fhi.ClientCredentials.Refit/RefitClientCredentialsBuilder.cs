@@ -1,97 +1,97 @@
-﻿using Fhi.ClientCredentials.Refit;
+﻿using Fhi.ClientCredentialsKeypairs;
 using Microsoft.Extensions.DependencyInjection;
 using Refit;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Fhi.ClientCredentialsKeypairs.Refit
+namespace Fhi.ClientCredentials.Refit;
+
+public class RefitClientCredentialsBuilder
 {
-    public class RefitClientCredentialsBuilder
+    private List<Type> DelegationHandlers = new();
+    private readonly IServiceCollection services;
+    private readonly ClientCredentialsConfiguration clientCredentialsConfig;
+    private readonly RefitClientCredentialsBuilderOptions options = new RefitClientCredentialsBuilderOptions();
+
+    public RefitSettings RefitSettings { get; set; }
+
+    public RefitClientCredentialsBuilder(IServiceCollection services, ClientCredentialsConfiguration config, RefitSettings? refitSettings)
     {
-        private List<Type> DelegationHandlers = new();
-        private readonly IServiceCollection services;
-        private readonly ClientCredentialsConfiguration clientCredentialsConfig;
-        private readonly RefitClientCredentialsBuilderOptions options = new RefitClientCredentialsBuilderOptions();
+        RefitSettings = refitSettings ?? CreateRefitSettings();
 
-        public RefitSettings RefitSettings { get; set; }
+        this.services = services;
+        clientCredentialsConfig = config;
 
-        public RefitClientCredentialsBuilder(IServiceCollection services, ClientCredentialsConfiguration config, RefitSettings? refitSettings)
-        {
-            this.RefitSettings = refitSettings ?? CreateRefitSettings();
+        services.AddTransient<IAuthenticationService>(_ => new AuthenticationService(config));
+        services.AddSingleton<IAuthTokenStore, AuthenticationStore>();
 
-            this.services = services;
-            this.clientCredentialsConfig = config;
+        services.AddSingleton(options);
 
-            services.AddTransient<IAuthenticationService>(_ => new AuthenticationService(config));
-            services.AddSingleton<IAuthTokenStore, AuthenticationStore>();
+        AddHandler<HttpAuthHandler>();
+        AddHandler<FhiHeaderDelegationHandler>();
+    }
 
-            services.AddSingleton(options);
+    public RefitClientCredentialsBuilder AddHandler<T>() where T : DelegatingHandler
+    {
+        DelegationHandlers.Add(typeof(T));
+        services.AddTransient<T>();
+        return this;
+    }
 
-            AddHandler<HttpAuthHandler>();
-        }
+    public RefitClientCredentialsBuilder ClearHandlers()
+    {
+        DelegationHandlers.Clear();
+        return this;
+    }
 
-        public RefitClientCredentialsBuilder AddHandler<T>() where T : DelegatingHandler
-        {
-            DelegationHandlers.Add(typeof(T));
-            services.AddTransient<T>();
-            return this;
-        }
+    /// <summary>
+    /// Adds propagation and handling of correlation ids. You should add this before any logging-delagates. Remember to add "app.UseCorrelationId()" in your startup code
+    /// </summary>
+    /// <returns></returns>
+    public RefitClientCredentialsBuilder AddCorrelationId()
+    {
+        options.UseCorrelationId = true;
 
-        public RefitClientCredentialsBuilder ClearHandlers()
-        {
-            DelegationHandlers.Clear();
-            return this;
-        }
+        AddHandler<CorrelationIdHandler>();
 
-        /// <summary>
-        /// Adds propagation and handling of correlation ids. You should add this before any logging-delagates. Remember to add "app.UseCorrelationId()" in your startup code
-        /// </summary>
-        /// <returns></returns>
-        public RefitClientCredentialsBuilder AddCorrelationId()
-        {
-            options.UseCorrelationId = true;
+        services.AddHttpContextAccessor();
 
-            AddHandler<CorrelationIdHandler>();
+        return this;
+    }
 
-            services.AddHttpContextAccessor();
-
-            return this;
-        }
-
-        public RefitClientCredentialsBuilder AddRefitClient<T>(string? nameOfService = null, Func<IHttpClientBuilder, IHttpClientBuilder>? extra = null) where T : class
-        {
-            var clientBuilder = services.AddRefitClient<T>(RefitSettings)
-                .ConfigureHttpClient(httpClient =>
-                {
-                    httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
-                });
-
-            foreach (var type in DelegationHandlers)
+    public RefitClientCredentialsBuilder AddRefitClient<T>(string? nameOfService = null, Func<IHttpClientBuilder, IHttpClientBuilder>? extra = null) where T : class
+    {
+        var clientBuilder = services.AddRefitClient<T>(RefitSettings)
+            .ConfigureHttpClient(httpClient =>
             {
-                clientBuilder.AddHttpMessageHandler((s) => (DelegatingHandler)s.GetRequiredService(type));
-            }
+                httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
+            });
 
-            extra?.Invoke(clientBuilder);
-
-            return this;
-        }
-
-        private static RefitSettings CreateRefitSettings()
+        foreach (var type in DelegationHandlers)
         {
-            var jsonOptions = new JsonSerializerOptions()
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            };
-
-            jsonOptions.Converters.Add(new JsonStringEnumConverter());
-
-            var refitSettings = new RefitSettings()
-            {
-                ContentSerializer = new SystemTextJsonContentSerializer(jsonOptions),
-            };
-
-            return refitSettings;
+            clientBuilder.AddHttpMessageHandler((s) => (DelegatingHandler)s.GetRequiredService(type));
         }
+
+        extra?.Invoke(clientBuilder);
+
+        return this;
+    }
+
+    private static RefitSettings CreateRefitSettings()
+    {
+        var jsonOptions = new JsonSerializerOptions()
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        };
+
+        jsonOptions.Converters.Add(new JsonStringEnumConverter());
+
+        var refitSettings = new RefitSettings()
+        {
+            ContentSerializer = new SystemTextJsonContentSerializer(jsonOptions),
+        };
+
+        return refitSettings;
     }
 }
