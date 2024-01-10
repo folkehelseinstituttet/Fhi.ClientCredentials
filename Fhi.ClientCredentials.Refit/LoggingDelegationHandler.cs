@@ -15,19 +15,6 @@ public class LoggingDelegationHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var headers = request
-            .Headers
-            .ToDictionary(x => x.Key, x => x.Value.First());
-
-        foreach (var header in headers)
-        {
-            if (header.Key.StartsWith("fhi-"))
-            {
-                request.Headers.Remove(header.Key);
-                request.Headers.Add(header.Key, HttpUtility.HtmlEncode(header.Value));
-            }
-        }
-
         var correalationId = request.Headers.FirstOrDefault(x => x.Key == CorrelationIdHandler.CorrelationIdHeaderName).Value.FirstOrDefault();
 
         var logUrl = AnonymizePersonalIdentifiers(request.RequestUri?.ToString());

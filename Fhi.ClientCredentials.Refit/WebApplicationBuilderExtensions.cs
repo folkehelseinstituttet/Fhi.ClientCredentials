@@ -2,9 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Refit;
-using Fhi.ClientCredentials.Refit;
+using Fhi.ClientCredentialsKeypairs;
 
-namespace Fhi.ClientCredentialsKeypairs.Refit
+namespace Fhi.ClientCredentials.Refit
 {
     public static class WebApplicationBuilderExtensions
     {
