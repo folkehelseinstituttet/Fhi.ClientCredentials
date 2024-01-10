@@ -12,6 +12,7 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
         {
             return AddClientCredentialsRefitBuilder(builder.Services, builder.Configuration, configSection, refitSettings);
         }
+
         public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, IConfiguration configuration, string? configSection = null, RefitSettings? refitSettings = null)
         {
             var config = configuration
