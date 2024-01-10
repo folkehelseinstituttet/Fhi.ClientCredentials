@@ -38,7 +38,6 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
             if (options.UseCorrelationId)
             {
                 app.UseMiddleware<CorrelationIdMiddleware>();
-                app.UseHeaderPropagation();
             }
 
             return app;

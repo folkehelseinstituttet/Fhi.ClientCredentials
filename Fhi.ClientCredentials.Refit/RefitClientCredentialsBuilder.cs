@@ -53,10 +53,7 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
 
             AddHandler<CorrelationIdHandler>();
 
-            services.AddHeaderPropagation(o =>
-            {
-                o.Headers.Add(CorrelationIdHandler.CorrelationIdHeaderName, context => string.IsNullOrEmpty(context.HeaderValue) ? Guid.NewGuid().ToString() : context.HeaderValue);
-            });
+            services.AddHttpContextAccessor();
 
             return this;
         }
@@ -68,13 +65,6 @@ namespace Fhi.ClientCredentialsKeypairs.Refit
                 {
                     httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
                 });
-
-            /* // we can't  add header propagation to without a httpcontext
-            if (options.UseCorrelationId)
-            {
-                clientBuilder.AddHeaderPropagation();
-            }
-            */
 
             foreach (var type in DelegationHandlers)
             {
