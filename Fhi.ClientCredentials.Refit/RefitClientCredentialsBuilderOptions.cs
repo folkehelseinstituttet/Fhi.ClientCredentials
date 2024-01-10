@@ -1,7 +1,6 @@
-﻿namespace Fhi.ClientCredentialsKeypairs.Refit
+﻿namespace Fhi.ClientCredentials.Refit;
+
+public class RefitClientCredentialsBuilderOptions
 {
-    public class RefitClientCredentialsBuilderOptions
-    {
-        public bool UseCorrelationId { get; set; } 
-    }
+    public bool UseCorrelationId { get; set; }
 }
