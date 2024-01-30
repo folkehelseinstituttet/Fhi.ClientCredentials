@@ -27,7 +27,7 @@
   }
 ```
 
-
+PS:  Please be aware that the Authority must end with `connect/token`.  
 
 ## Client Credentials using Keypairs
 
