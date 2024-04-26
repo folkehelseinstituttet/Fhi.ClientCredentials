@@ -16,7 +16,7 @@ namespace Fhi.ClientCredentialsKeypairs
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (!request.Options.Any(x => x.Key == AnonymousOptionKey))
+            if (request.Options.All(x => x.Key != AnonymousOptionKey))
             {
                 var token = await _authTokenStore.GetToken();
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
