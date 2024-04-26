@@ -2,24 +2,20 @@
 
 This package contains code to simplify working with Refit and HelseId. 
 
-This default setup will add a token handler to your Refit Interface in addition to letting you add multiple delegates if needed (f.ex. logging).
-
 ## Usage
 
-Include thhis code in your WebApi startup builder:
+Include this code in your WebApi startup builder. 
+Don't forget to call UseCorrelationId() after building your application if you are using Corellation Id:
 
 ```
 builder.AddClientCredentialsRefitBuilder()
     .AddRefitClient<IMyRefitClient>();
+
+...
+
+app.UseCorrelationId();
 ```
 
-If you want to add additional loggers add them before "AddRefitClient": 
-
-```
-builder.AddClientCredentialsRefitBuilder()
-    .AddHandler<MyLoggingDelegationHandler>()
-    .AddRefitClient<IMyRefitClient>();
-```
 The code loads your configuration from IConfiguration using the section "ClientCredentialsConfiguration".
 If you want to override which section to use you can pass the correct section to AddClientCredentialsKeypairs:
 
@@ -36,9 +32,33 @@ builder.AddClientCredentialsRefitBuilder(new RefitSettings())
     .AddRefitClient<IMyRefitClient>();
 ```
 
-## Adding Correlation Id to all requests
+## Options
 
-Use "AddCorrelationId()" to add header propagation of the default FHI correlation id header. 
+This default setup will add a token handler, logging handler, correlationId handler and an header-encoding handler
+to your Refit Interface. In addition you can add multiple custom delegates if needed.
+
+To add custom delegates use the AddHandler() function:
+
+```
+builder.AddClientCredentialsRefitBuilder()
+    .AddHandler<MyOwnLoggingDelegationHandler>();
+```
+
+You can also choose which handlers to use if you prefer not to use all the default handlers:
+```
+builder.AddClientCredentialsRefitBuilder(builderOptions: new RefitClientCredentialsBuilderOptions()
+    {
+        UseAnonymizationLogger = true,
+        HtmlEncodeFhiHeaders = true,
+        UseCorrelationId = true,
+        UseDefaultTokenHandler = true,
+    })
+    .AddRefitClient<IMyRefitClient>();
+```
+
+## Correlation Id
+
+The Correlation Id Handler adds header propagation of the default FHI correlation id header. 
 
 ```
 builder.AddClientCredentialsRefitBuilder()
@@ -53,11 +73,48 @@ Remember to add usage of header propagation to your app startup code. It should 
 app.UseCorrelationId();
 ```
 
-## More!
+## Logging
 
-Add the handler "LoggingDelegationHandler" to automatically log all Refit requets. The logger has to be availible trough dependency injection using Microsoft.Extensions.Logging (ILogger).
+The handler "LoggingDelegationHandler" log all Refit requets with anonymized URLs. 
+The logger requires dependency injection of a Microsoft.Extensions.Logging.ILogger.
+
+The LoggingDelegationHandler will log the following messages. Uri will have all Nowrwegian National identity numbers replaced with start '***********), and the query parameters removed:
 
 ```
-builder.AddClientCredentialsRefitBuilder()
-    .AddHandler<LoggingDelegationHandler>();
+    Requested HTTP {RequestMethod} {Uri} in {Elapsed}ms with response {StatusCode} {Reason} with CorrelationId {CorrelationId}
+    Requested HTTP {RequestMethod} {Uri} in {Elapsed}ms with exception {Exception} with CorrelationId {CorrelationId}
 ```
+
+## WebApi Default Logger issues
+
+The default implementation of HttpClientFactry sets the complete URI in the logging Scope, 
+which might contain sensitive information that we are not able to remove.
+
+F.ex. will your log include this if you are using structured logging (json etc):
+
+    Scope: [{ "HTTP GET http://api/person/12345678901/?evenDangerousQueryParams=true"}]
+
+We therefore remove all default loggers created by the WebApi-framework.
+
+If you wish to preserve the default loggers use
+
+```
+builder.AddClientCredentialsRefitBuilder(builderOptions: new RefitClientCredentialsBuilderOptions()
+    {
+        PreserveDefaultLogger = true,
+    })
+    .AddRefitClient<IMyRefitClient>();
+```
+
+## Header encoding
+
+If HtmlEncodeFhiHeaders is enabled all headers starting with the prefix "fhi-" will be automatically Html-encoded.
+This is usefull when using headers like "fhi-organization-name", which might contain illegal HTTP header characters.
+
+The HTML encoding should only encode characters that normally are illegal in as header values, so the alternative is requests
+failing because of illegal headers.
+
+Note that headers are not automatically decoded on the receiving server! You will still have to do your own
+decoding (using HttpUtility.HtmlDecode or similar), as there are no standard header-encoding rules.
+
+Html-encoding is used over Url-encoding, since more "normal" characters, like spaces, are preserved.
