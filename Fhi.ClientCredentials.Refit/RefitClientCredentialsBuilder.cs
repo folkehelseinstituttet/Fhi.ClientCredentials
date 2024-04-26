@@ -68,7 +68,7 @@ public class RefitClientCredentialsBuilder
 	/// <returns></returns>
 	public RefitClientCredentialsBuilder ConfigureDefaultLogging(bool preserveDefaultLogger)
 	{
-		options.RemoveDefaultLogging = !preserveDefaultLogger;
+		options.PreserveDefaultLogger = preserveDefaultLogger;
 		return this;
 	}
 
@@ -80,8 +80,8 @@ public class RefitClientCredentialsBuilder
                 httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
 			});
 
-        if (options.RemoveDefaultLogging == true ||
-            (options.RemoveDefaultLogging == null &&
+        if (options.PreserveDefaultLogger == false ||
+            (options.PreserveDefaultLogger == null &&
 			DelegationHandlers.Any(x => x == typeof(LoggingDelegationHandler))))
         {
             clientBuilder.RemoveAllLoggers();
