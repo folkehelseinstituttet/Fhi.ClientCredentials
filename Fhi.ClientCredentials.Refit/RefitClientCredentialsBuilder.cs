@@ -59,13 +59,33 @@ public class RefitClientCredentialsBuilder
         return this;
     }
 
-    public RefitClientCredentialsBuilder AddRefitClient<T>(string? nameOfService = null, Func<IHttpClientBuilder, IHttpClientBuilder>? extra = null) where T : class
+	/// <summary>
+	/// The default implementation of HttpClientFactry sets the complete URI in the logging Scope,
+	/// which might contain sensitive information that we are not able to remove.
+	/// We therefore wish to remove the default logger. Use this method if you want to preserve it.
+	/// </summary>
+	/// <param name="preserveDefaultLogger"></param>
+	/// <returns></returns>
+	public RefitClientCredentialsBuilder ConfigureDefaultLogging(bool preserveDefaultLogger)
+	{
+		options.RemoveDefaultLogging = !preserveDefaultLogger;
+		return this;
+	}
+
+	public RefitClientCredentialsBuilder AddRefitClient<T>(string? nameOfService = null, Func<IHttpClientBuilder, IHttpClientBuilder>? extra = null) where T : class
     {
         var clientBuilder = services.AddRefitClient<T>(RefitSettings)
             .ConfigureHttpClient(httpClient =>
             {
                 httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
-            });
+			});
+
+        if (options.RemoveDefaultLogging == true ||
+            (options.RemoveDefaultLogging == null &&
+			DelegationHandlers.Any(x => x == typeof(LoggingDelegationHandler))))
+        {
+            clientBuilder.RemoveAllLoggers();
+		}
 
         foreach (var type in DelegationHandlers)
         {

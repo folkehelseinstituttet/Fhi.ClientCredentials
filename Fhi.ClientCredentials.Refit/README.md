@@ -53,11 +53,38 @@ Remember to add usage of header propagation to your app startup code. It should 
 app.UseCorrelationId();
 ```
 
-## More!
+## Logging
 
 Add the handler "LoggingDelegationHandler" to automatically log all Refit requets. The logger has to be availible trough dependency injection using Microsoft.Extensions.Logging (ILogger).
 
 ```
 builder.AddClientCredentialsRefitBuilder()
     .AddHandler<LoggingDelegationHandler>();
+```
+
+The LoggingDelegationHandler will log the following messages. Uri will have all Nowrwegian National identity numbers replaced with start '***********), and the query parameters removed:
+
+```
+    Requested HTTP {RequestMethod} {Uri} in {Elapsed}ms with response {StatusCode} {Reason} with CorrelationId {CorrelationId}
+    Requested HTTP {RequestMethod} {Uri} in {Elapsed}ms with exception {Exception} with CorrelationId {CorrelationId}
+```
+
+Adding the LoggingDelegationHandler will automatically remove the default HttpClientFactory logger!
+The default implementation of HttpClientFactry sets the complete URI in the logging Scope, 
+which might contain sensitive information that we are not able to remove.
+
+If you wish to preserve the standard logger you can configure it:
+
+```
+builder.AddClientCredentialsRefitBuilder()
+    .ConfigureDefaultLogging(preserveDefaultLogger: true)
+    .AddHandler<LoggingDelegationHandler>();
+```
+
+or if you want to remove the default logger when using your own logger:
+
+```
+builder.AddClientCredentialsRefitBuilder()
+    .ConfigureDefaultLogging(preserveDefaultLogger: false)
+    .AddHandler<MyOwnLoggingDelegationHandler>();
 ```

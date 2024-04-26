@@ -1,11 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
-using System.Web;
 
 namespace Fhi.ClientCredentials.Refit;
 
 public class LoggingDelegationHandler : DelegatingHandler
 {
+	private const string LogMessage = "Requested HTTP {RequestMethod} {Uri} in {Elapsed}ms with response {StatusCode} {Reason} with CorrelationId {CorrelationId}";
+	private const string LogMessageError = "Requested HTTP {RequestMethod} {Uri} in {Elapsed}ms with exception {Exception} with CorrelationId {CorrelationId}";
+	
     private readonly ILogger<LoggingDelegationHandler> logger;
 
     public LoggingDelegationHandler(ILogger<LoggingDelegationHandler> logger)
@@ -14,12 +16,12 @@ public class LoggingDelegationHandler : DelegatingHandler
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        var correalationId = request.Headers.FirstOrDefault(x => x.Key == CorrelationIdHandler.CorrelationIdHeaderName).Value.FirstOrDefault();
+	{
+		var correalationId = request.Headers.FirstOrDefault(x => x.Key == CorrelationIdHandler.CorrelationIdHeaderName).Value?.FirstOrDefault();
 
-        var logUrl = AnonymizePersonalIdentifiers(request.RequestUri?.ToString());
+        var logUrl = AnonymizePersonalIdentifiers(request.RequestUri?.GetLeftPart(UriPartial.Path).ToString());
 
-        var start = DateTime.Now;
+		var start = DateTime.Now;
         try
         {
             var response = await base.SendAsync(request, cancellationToken);
@@ -27,11 +29,11 @@ public class LoggingDelegationHandler : DelegatingHandler
 
             if (response.IsSuccessStatusCode)
             {
-                logger.LogInformation("Requested HTTP {Method} {Url} in {ms}ms with response {StatusCode} {Reason} with CorrelationId: {CorrelationId}", request.Method, logUrl, time, (int)response.StatusCode, response.ReasonPhrase, correalationId);
+                logger.LogInformation(LogMessage, request.Method, logUrl, time, (int)response.StatusCode, response.ReasonPhrase, correalationId);
             }
             else
             {
-                logger.LogWarning("Requested HTTP {Method} {Url} in {ms}ms with response {StatusCode} {Reason} with CorrelationId: {CorrelationId}", request.Method, logUrl, time, (int)response.StatusCode, response.ReasonPhrase, correalationId);
+                logger.LogWarning(LogMessage, request.Method, logUrl, time, (int)response.StatusCode, response.ReasonPhrase, correalationId);
             }
 
             return response;
@@ -39,7 +41,7 @@ public class LoggingDelegationHandler : DelegatingHandler
         catch (Exception ex)
         {
             var time = (int)(DateTime.Now - start).TotalMilliseconds;
-            logger.LogError(ex, "Requested HTTP {Method} {Url} in {ms}ms with exception {Exception} with CorrelationId: {CorrelationId}", request.Method, logUrl, time, ex.Message, correalationId);
+            logger.LogError(ex, LogMessageError, request.Method, logUrl, time, ex.Message, correalationId);
             throw;
         }
     }
