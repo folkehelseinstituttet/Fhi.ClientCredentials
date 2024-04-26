@@ -8,83 +8,91 @@ namespace Fhi.ClientCredentials.Refit;
 
 public class RefitClientCredentialsBuilder
 {
-    private List<Type> DelegationHandlers = new();
+    private readonly List<Type> DelegationHandlers = new();
     private readonly IServiceCollection services;
     private readonly ClientCredentialsConfiguration clientCredentialsConfig;
-    private readonly RefitClientCredentialsBuilderOptions options = new RefitClientCredentialsBuilderOptions();
+    private readonly RefitClientCredentialsBuilderOptions builderOptions;
+    private readonly RefitSettings refitSettings;
 
-    public RefitSettings RefitSettings { get; set; }
-
-    public RefitClientCredentialsBuilder(IServiceCollection services, ClientCredentialsConfiguration config, RefitSettings? refitSettings)
+    public RefitClientCredentialsBuilder(
+        IServiceCollection services, 
+        ClientCredentialsConfiguration config, 
+        RefitSettings? refitSettings, 
+        RefitClientCredentialsBuilderOptions? options)
     {
-        RefitSettings = refitSettings ?? CreateRefitSettings();
-
+        this.refitSettings = refitSettings ?? CreateRefitSettings();
         this.services = services;
+        builderOptions = options ?? new RefitClientCredentialsBuilderOptions();
         clientCredentialsConfig = config;
 
         services.AddTransient<IAuthenticationService>(_ => new AuthenticationService(config));
         services.AddSingleton<IAuthTokenStore, AuthenticationStore>();
 
-        services.AddSingleton(options);
+        services.AddSingleton(builderOptions);
 
-        AddHandler<HttpAuthHandler>();
-        AddHandler<FhiHeaderDelegationHandler>();
+        if (builderOptions.UseDefaultTokenHandler)
+        {
+            AddHandler<HttpAuthHandler>();
+        }
+        if (builderOptions.HtmlEncodeFhiHeaders)
+        {
+            AddHandler<FhiHeaderDelegationHandler>();
+        }
+        if (builderOptions.UseAnonymizationLogger)
+        {
+            AddHandler<LoggingDelegationHandler>();
+        }
+        if (builderOptions.UseCorrelationId)
+        {
+            AddHandler<CorrelationIdHandler>();
+
+            services.AddHttpContextAccessor();
+            services.AddHeaderPropagation(o =>
+            {
+                o.Headers.Add(CorrelationIdHandler.CorrelationIdHeaderName, context => string.IsNullOrEmpty(context.HeaderValue) ? Guid.NewGuid().ToString() : context.HeaderValue);
+            });
+        }
     }
 
+    /// <summary>
+    /// Add a custom handler that will be dependency-injected into the Refit client.
+    /// </summary>
+    /// <typeparam name="T">A DelegatingHandler</typeparam>
+    /// <returns></returns>
     public RefitClientCredentialsBuilder AddHandler<T>() where T : DelegatingHandler
     {
-        DelegationHandlers.Add(typeof(T));
-        services.AddTransient<T>();
-        return this;
-    }
-
-    public RefitClientCredentialsBuilder ClearHandlers()
-    {
-        DelegationHandlers.Clear();
-        return this;
-    }
-
-    /// <summary>
-    /// Adds propagation and handling of correlation ids. You should add this before any logging-delagates. Remember to add "app.UseCorrelationId()" in your startup code
-    /// </summary>
-    /// <returns></returns>
-    public RefitClientCredentialsBuilder AddCorrelationId()
-    {
-        options.UseCorrelationId = true;
-
-        AddHandler<CorrelationIdHandler>();
-
-        services.AddHttpContextAccessor();
-
+        var type = typeof(T);
+        if (!DelegationHandlers.Any(x => x == type))
+        {
+            DelegationHandlers.Add(typeof(T));
+            services.AddTransient<T>();
+        }
         return this;
     }
 
     /// <summary>
-    /// The default implementation of HttpClientFactry sets the complete URI in the logging Scope,
-    /// which might contain sensitive information that we are not able to remove.
-    /// We therefore wish to remove the default logger. Use this method if you want to preserve it.
+    /// Add a RefitClient to the DI-container.
     /// </summary>
-    /// <param name="preserveDefaultLogger"></param>
+    /// <typeparam name="T">Refit interface</typeparam>
+    /// <param name="nameOfService">Name of the service in the ClientCredentials configuration file</param>
+    /// <param name="extra">Extra IHttpClientBuilder steps</param>
     /// <returns></returns>
-    public RefitClientCredentialsBuilder ConfigureDefaultLogging(bool preserveDefaultLogger)
-    {
-        options.PreserveDefaultLogger = preserveDefaultLogger;
-        return this;
-    }
-
     public RefitClientCredentialsBuilder AddRefitClient<T>(string? nameOfService = null, Func<IHttpClientBuilder, IHttpClientBuilder>? extra = null) where T : class
     {
-        var clientBuilder = services.AddRefitClient<T>(RefitSettings)
+        var clientBuilder = services.AddRefitClient<T>(refitSettings)
             .ConfigureHttpClient(httpClient =>
             {
                 httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
             });
 
-        if (options.PreserveDefaultLogger == false ||
-            (options.PreserveDefaultLogger == null &&
-            DelegationHandlers.Any(x => x == typeof(LoggingDelegationHandler))))
+        if (!builderOptions.PreserveDefaultLogger)
         {
             clientBuilder.RemoveAllLoggers();
+        }
+
+        if (builderOptions.UseCorrelationId)
+        {
+            clientBuilder.AddHeaderPropagation();
         }
 
         foreach (var type in DelegationHandlers)

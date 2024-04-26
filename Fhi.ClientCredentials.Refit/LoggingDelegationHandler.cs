@@ -46,12 +46,19 @@ public class LoggingDelegationHandler : DelegatingHandler
         }
     }
 
-    public static string? AnonymizePersonalIdentifiers(string? sourceToAnonymize)
+    /// <summary>
+    /// Function to anonymize a string, replacing all Norwegian National Identification Numbers (11 digits) with starts.
+    /// </summary>
+    /// <param name="sourceToAnonymize">A string that might contain a NIN.</param>
+    /// <returns>The string, with NINs replaced with "***********"</returns>
+    public static string AnonymizePersonalIdentifiers(string? sourceToAnonymize)
     {
         if (string.IsNullOrWhiteSpace(sourceToAnonymize))
-            return sourceToAnonymize;
+        {
+            return sourceToAnonymize ?? "";
+        }
 
-        return Regex.Replace(sourceToAnonymize, "\\d{6,11}", "***********");
+        return Regex.Replace(sourceToAnonymize, "\\d{11}", "***********");
     }
 }
 

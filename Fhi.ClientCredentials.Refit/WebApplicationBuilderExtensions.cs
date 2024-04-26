@@ -8,23 +8,23 @@ namespace Fhi.ClientCredentials.Refit
 {
     public static class WebApplicationBuilderExtensions
     {
-        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this WebApplicationBuilder builder, string? configSection = null, RefitSettings? refitSettings = null)
+        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this WebApplicationBuilder builder, string? configSection = null, RefitClientCredentialsBuilderOptions? builderOptions = null, RefitSettings? refitSettings = null)
         {
-            return AddClientCredentialsRefitBuilder(builder.Services, builder.Configuration, configSection, refitSettings);
+            return AddClientCredentialsRefitBuilder(builder.Services, builder.Configuration, configSection, builderOptions, refitSettings);
         }
 
-        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, IConfiguration configuration, string? configSection = null, RefitSettings? refitSettings = null)
+        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, IConfiguration configuration, string? configSection = null, RefitClientCredentialsBuilderOptions? builderOptions = null, RefitSettings? refitSettings = null)
         {
             var config = configuration
                 .GetSection(configSection ?? nameof(ClientCredentialsConfiguration))
                 .Get<ClientCredentialsConfiguration>();
 
-            return AddClientCredentialsRefitBuilder(services, config, refitSettings);
+            return AddClientCredentialsRefitBuilder(services, config, builderOptions, refitSettings);
         }
 
-        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, ClientCredentialsConfiguration configuration, RefitSettings? refitSettings = null)
+        public static RefitClientCredentialsBuilder AddClientCredentialsRefitBuilder(this IServiceCollection services, ClientCredentialsConfiguration configuration, RefitClientCredentialsBuilderOptions? builderOptions = null, RefitSettings? refitSettings = null)
         {
-            return new RefitClientCredentialsBuilder(services, configuration, refitSettings);
+            return new RefitClientCredentialsBuilder(services, configuration, refitSettings, builderOptions);
         }
 
         /// <summary>
@@ -37,12 +37,13 @@ namespace Fhi.ClientCredentials.Refit
             var options = app.ApplicationServices.GetService<RefitClientCredentialsBuilderOptions>();
             if (options == null)
             {
-                throw new Exception("You need to call builder.AddHelseIdForBlazor() before using app.UseHelseIdForBlazor()");
+                throw new Exception("You need to call builder.AddClientCredentialsRefitBuilder() before using app.UseCorrelationId()");
             }
 
             if (options.UseCorrelationId)
             {
                 app.UseMiddleware<CorrelationIdMiddleware>();
+                app.UseHeaderPropagation();
             }
 
             return app;
