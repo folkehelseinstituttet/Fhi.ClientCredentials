@@ -8,56 +8,56 @@ namespace Fhi.ClientCredentials.Refit;
 
 public class RefitClientCredentialsBuilder
 {
-    private List<Type> DelegationHandlers = new();
-    private readonly IServiceCollection services;
-    private readonly ClientCredentialsConfiguration clientCredentialsConfig;
-    private readonly RefitClientCredentialsBuilderOptions options = new RefitClientCredentialsBuilderOptions();
+	private List<Type> DelegationHandlers = new();
+	private readonly IServiceCollection services;
+	private readonly ClientCredentialsConfiguration clientCredentialsConfig;
+	private readonly RefitClientCredentialsBuilderOptions options = new RefitClientCredentialsBuilderOptions();
 
-    public RefitSettings RefitSettings { get; set; }
+	public RefitSettings RefitSettings { get; set; }
 
-    public RefitClientCredentialsBuilder(IServiceCollection services, ClientCredentialsConfiguration config, RefitSettings? refitSettings)
-    {
-        RefitSettings = refitSettings ?? CreateRefitSettings();
+	public RefitClientCredentialsBuilder(IServiceCollection services, ClientCredentialsConfiguration config, RefitSettings? refitSettings)
+	{
+		RefitSettings = refitSettings ?? CreateRefitSettings();
 
-        this.services = services;
-        clientCredentialsConfig = config;
+		this.services = services;
+		clientCredentialsConfig = config;
 
-        services.AddTransient<IAuthenticationService>(_ => new AuthenticationService(config));
-        services.AddSingleton<IAuthTokenStore, AuthenticationStore>();
+		services.AddTransient<IAuthenticationService>(_ => new AuthenticationService(config));
+		services.AddSingleton<IAuthTokenStore, AuthenticationStore>();
 
-        services.AddSingleton(options);
+		services.AddSingleton(options);
 
-        AddHandler<HttpAuthHandler>();
-        AddHandler<FhiHeaderDelegationHandler>();
-    }
+		AddHandler<HttpAuthHandler>();
+		AddHandler<FhiHeaderDelegationHandler>();
+	}
 
-    public RefitClientCredentialsBuilder AddHandler<T>() where T : DelegatingHandler
-    {
-        DelegationHandlers.Add(typeof(T));
-        services.AddTransient<T>();
-        return this;
-    }
+	public RefitClientCredentialsBuilder AddHandler<T>() where T : DelegatingHandler
+	{
+		DelegationHandlers.Add(typeof(T));
+		services.AddTransient<T>();
+		return this;
+	}
 
-    public RefitClientCredentialsBuilder ClearHandlers()
-    {
-        DelegationHandlers.Clear();
-        return this;
-    }
+	public RefitClientCredentialsBuilder ClearHandlers()
+	{
+		DelegationHandlers.Clear();
+		return this;
+	}
 
-    /// <summary>
-    /// Adds propagation and handling of correlation ids. You should add this before any logging-delagates. Remember to add "app.UseCorrelationId()" in your startup code
-    /// </summary>
-    /// <returns></returns>
-    public RefitClientCredentialsBuilder AddCorrelationId()
-    {
-        options.UseCorrelationId = true;
+	/// <summary>
+	/// Adds propagation and handling of correlation ids. You should add this before any logging-delagates. Remember to add "app.UseCorrelationId()" in your startup code
+	/// </summary>
+	/// <returns></returns>
+	public RefitClientCredentialsBuilder AddCorrelationId()
+	{
+		options.UseCorrelationId = true;
 
-        AddHandler<CorrelationIdHandler>();
+		AddHandler<CorrelationIdHandler>();
 
-        services.AddHttpContextAccessor();
+		services.AddHttpContextAccessor();
 
-        return this;
-    }
+		return this;
+	}
 
 	/// <summary>
 	/// The default implementation of HttpClientFactry sets the complete URI in the logging Scope,
@@ -73,45 +73,45 @@ public class RefitClientCredentialsBuilder
 	}
 
 	public RefitClientCredentialsBuilder AddRefitClient<T>(string? nameOfService = null, Func<IHttpClientBuilder, IHttpClientBuilder>? extra = null) where T : class
-    {
-        var clientBuilder = services.AddRefitClient<T>(RefitSettings)
-            .ConfigureHttpClient(httpClient =>
-            {
-                httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
+	{
+		var clientBuilder = services.AddRefitClient<T>(RefitSettings)
+			.ConfigureHttpClient(httpClient =>
+			{
+				httpClient.BaseAddress = clientCredentialsConfig.UriToApiByName(nameOfService ?? typeof(T).Name);
 			});
 
-        if (options.PreserveDefaultLogger == false ||
-            (options.PreserveDefaultLogger == null &&
+		if (options.PreserveDefaultLogger == false ||
+			(options.PreserveDefaultLogger == null &&
 			DelegationHandlers.Any(x => x == typeof(LoggingDelegationHandler))))
-        {
-            clientBuilder.RemoveAllLoggers();
+		{
+			clientBuilder.RemoveAllLoggers();
 		}
 
-        foreach (var type in DelegationHandlers)
-        {
-            clientBuilder.AddHttpMessageHandler((s) => (DelegatingHandler)s.GetRequiredService(type));
-        }
+		foreach (var type in DelegationHandlers)
+		{
+			clientBuilder.AddHttpMessageHandler((s) => (DelegatingHandler)s.GetRequiredService(type));
+		}
 
-        extra?.Invoke(clientBuilder);
+		extra?.Invoke(clientBuilder);
 
-        return this;
-    }
+		return this;
+	}
 
-    private static RefitSettings CreateRefitSettings()
-    {
-        var jsonOptions = new JsonSerializerOptions()
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        };
+	private static RefitSettings CreateRefitSettings()
+	{
+		var jsonOptions = new JsonSerializerOptions()
+		{
+			PropertyNameCaseInsensitive = true,
+			PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+		};
 
-        jsonOptions.Converters.Add(new JsonStringEnumConverter());
+		jsonOptions.Converters.Add(new JsonStringEnumConverter());
 
-        var refitSettings = new RefitSettings()
-        {
-            ContentSerializer = new SystemTextJsonContentSerializer(jsonOptions),
-        };
+		var refitSettings = new RefitSettings()
+		{
+			ContentSerializer = new SystemTextJsonContentSerializer(jsonOptions),
+		};
 
-        return refitSettings;
-    }
+		return refitSettings;
+	}
 }
