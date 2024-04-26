@@ -2,7 +2,7 @@
 
 public class RefitClientCredentialsBuilderOptions
 {
-	public bool UseCorrelationId { get; set; }
+    public bool UseCorrelationId { get; set; }
 
-	public bool? PreserveDefaultLogger { get; set; }
+    public bool? PreserveDefaultLogger { get; set; }
 }
