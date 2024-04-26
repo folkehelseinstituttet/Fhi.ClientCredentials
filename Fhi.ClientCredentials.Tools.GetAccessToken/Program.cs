@@ -33,8 +33,8 @@ try
 	{
 		throw new Exception(@"No valid json file found.
 
-Usage: Get-Access-Token [appsettings.json] [ConfigSectionName]
-Usage: Get-Access-Token [directory-to-search] [ConfigSectionName]");
+Usage: gettoken [appsettings.json] [ConfigSectionName]
+Usage: gettoken [directory-to-search] [ConfigSectionName]");
 	}
 
 	var section = args.LastOrDefault(x => !x.EndsWith(".json", StringComparison.InvariantCultureIgnoreCase) && !Directory.Exists(x))
