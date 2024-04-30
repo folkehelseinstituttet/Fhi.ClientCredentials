@@ -19,14 +19,14 @@ public class RefitClientCredentialsBuilderOptions
 
     /// <summary>
     /// Html-encodes all headers starting with the prefix "fhi-".
-    /// This is usefull when using headers like "fhi-organization-name", which might contain
+    /// This is useful when using headers like "fhi-organization-name", which might contain
     /// illegal HTTP header characters.
     /// </summary>
     public bool HtmlEncodeFhiHeaders { get; set; } = true;
 
     /// <summary>
     /// Adds logging to all requests using LoggingDelegationHandler.
-    /// The handler anonymizes all NIN-like requets paths and removes query strings from the log URL.
+    /// The handler anonymizes all NIN-like requests paths and removes query strings from the log URL.
     /// </summary>
     public bool UseAnonymizationLogger { get; set; } = true;
 
