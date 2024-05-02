@@ -38,10 +38,6 @@ public class RefitClientCredentialsBuilder
         {
             AddHandler<FhiHeaderDelegationHandler>();
         }
-        if (builderOptions.UseAnonymizationLogger)
-        {
-            AddHandler<LoggingDelegationHandler>();
-        }
         if (builderOptions.UseCorrelationId)
         {
             AddHandler<CorrelationIdHandler>();
@@ -51,6 +47,10 @@ public class RefitClientCredentialsBuilder
             {
                 o.Headers.Add(CorrelationIdHandler.CorrelationIdHeaderName, context => string.IsNullOrEmpty(context.HeaderValue) ? Guid.NewGuid().ToString() : context.HeaderValue);
             });
+        }
+        if (builderOptions.UseAnonymizationLogger)
+        {
+            AddHandler<LoggingDelegationHandler>();
         }
     }
 
