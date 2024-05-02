@@ -1,5 +1,7 @@
 ﻿using Fhi.ClientCredentialsKeypairs;
+using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Primitives;
 using Refit;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -38,10 +40,6 @@ public class RefitClientCredentialsBuilder
         {
             AddHandler<FhiHeaderDelegationHandler>();
         }
-        if (builderOptions.UseAnonymizationLogger)
-        {
-            AddHandler<LoggingDelegationHandler>();
-        }
         if (builderOptions.UseCorrelationId)
         {
             AddHandler<CorrelationIdHandler>();
@@ -51,6 +49,10 @@ public class RefitClientCredentialsBuilder
             {
                 o.Headers.Add(CorrelationIdHandler.CorrelationIdHeaderName, context => string.IsNullOrEmpty(context.HeaderValue) ? Guid.NewGuid().ToString() : context.HeaderValue);
             });
+        }
+        if (builderOptions.UseAnonymizationLogger)
+        {
+            AddHandler<LoggingDelegationHandler>();
         }
     }
 
@@ -93,6 +95,12 @@ public class RefitClientCredentialsBuilder
         if (builderOptions.UseCorrelationId)
         {
             clientBuilder.AddHeaderPropagation();
+            // populate the HeaderPropagationValues dictionary so we can create the client regardless of being in or outside a HttpContext
+            clientBuilder.ConfigureHttpClient((sp, client) =>
+            {
+                var values = sp.GetRequiredService<HeaderPropagationValues>();
+                values.Headers = values.Headers ?? new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
+            });
         }
 
         foreach (var type in DelegationHandlers)
