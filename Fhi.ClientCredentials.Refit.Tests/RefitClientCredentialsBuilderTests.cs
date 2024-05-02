@@ -2,7 +2,6 @@ using Fhi.ClientCredentialsKeypairs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.JSInterop;
 using NSubstitute;
 using NUnit.Framework;
 using Refit;
@@ -96,7 +95,7 @@ public partial class RefitClientCredentialsBuilderTests
         public const string TestHeaderName = "fhi-encoded";
 
         [Get("/info")]
-        [Headers($"{TestHeaderName}: test æ")]
+        [Headers($"{TestHeaderName}: test Ã¦")]
         Task<ApiResponse<string>> Info();
     }
 }
