@@ -92,20 +92,14 @@ public class RefitClientCredentialsBuilder
             clientBuilder.RemoveAllLoggers();
         }
 
-        if (builderOptions.UseCorrelationId)
-        {
-            clientBuilder.AddHeaderPropagation();
-            // populate the HeaderPropagationValues dictionary so we can create the client regardless of being in or outside a HttpContext
-            clientBuilder.ConfigureHttpClient((sp, client) =>
-            {
-                var values = sp.GetRequiredService<HeaderPropagationValues>();
-                values.Headers = values.Headers ?? new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
-            });
-        }
-
         foreach (var type in DelegationHandlers)
         {
             clientBuilder.AddHttpMessageHandler((s) => (DelegatingHandler)s.GetRequiredService(type));
+        }
+
+        if (builderOptions.UseCorrelationId)
+        {
+            clientBuilder.AddHeaderPropagation();
         }
 
         extra?.Invoke(clientBuilder);
