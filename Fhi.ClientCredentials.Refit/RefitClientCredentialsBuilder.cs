@@ -41,12 +41,7 @@ public class RefitClientCredentialsBuilder
         if (builderOptions.UseCorrelationId)
         {
             AddHandler<CorrelationIdHandler>();
-
             services.AddHttpContextAccessor();
-            services.AddHeaderPropagation(o =>
-            {
-                o.Headers.Add(CorrelationIdHandler.CorrelationIdHeaderName, context => string.IsNullOrEmpty(context.HeaderValue) ? Guid.NewGuid().ToString() : context.HeaderValue);
-            });
         }
         if (builderOptions.UseAnonymizationLogger)
         {
@@ -88,11 +83,6 @@ public class RefitClientCredentialsBuilder
         if (!builderOptions.PreserveDefaultLogger)
         {
             clientBuilder.RemoveAllLoggers();
-        }
-
-        if (builderOptions.UseCorrelationId)
-        {
-            clientBuilder.AddHeaderPropagation();
         }
 
         foreach (var type in DelegationHandlers)
