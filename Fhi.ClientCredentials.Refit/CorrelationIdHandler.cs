@@ -5,18 +5,18 @@ namespace Fhi.ClientCredentials.Refit;
 public class CorrelationIdHandler : DelegatingHandler
 {
     public const string CorrelationIdHeaderName = "X-Correlation-ID";
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IHttpContextAccessor httpContextAccessor;
 
     public CorrelationIdHandler(IHttpContextAccessor httpContextAccessor)
     {
-        _httpContextAccessor = httpContextAccessor;
+        this.httpContextAccessor = httpContextAccessor;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var correlationId = Guid.NewGuid().ToString();
 
-        var context = _httpContextAccessor.HttpContext;
+        var context = httpContextAccessor.HttpContext;
         if (context != null)
         {
             var corrFromContext = context.Request.Headers.FirstOrDefault(x => x.Key == CorrelationIdHeaderName).Value.FirstOrDefault();
