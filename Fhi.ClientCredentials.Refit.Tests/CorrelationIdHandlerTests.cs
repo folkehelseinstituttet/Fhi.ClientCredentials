@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using NUnit.Framework;
 
@@ -18,7 +16,7 @@ public class CorrelationIdHandlerTests
 
         var provider = services.BuildServiceProvider();
 
-        var handler = new CorrelationIdHandler(CreateContext(correlationId), new HeaderPropagationValues(), Options.Create(new HeaderPropagationOptions()));
+        var handler = new CorrelationIdHandler(CreateContext(correlationId));
         handler.InnerHandler = new DummyInnerHandler();
 
         var client = new HttpClient(handler);

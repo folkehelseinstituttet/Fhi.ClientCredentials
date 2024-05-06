@@ -1,7 +1,5 @@
 ﻿using Fhi.ClientCredentialsKeypairs;
-using Microsoft.AspNetCore.HeaderPropagation;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Primitives;
 using Refit;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -43,12 +41,7 @@ public class RefitClientCredentialsBuilder
         if (builderOptions.UseCorrelationId)
         {
             AddHandler<CorrelationIdHandler>();
-
             services.AddHttpContextAccessor();
-            services.AddHeaderPropagation(o =>
-            {
-                o.Headers.Add(CorrelationIdHandler.CorrelationIdHeaderName, context => string.IsNullOrEmpty(context.HeaderValue) ? Guid.NewGuid().ToString() : context.HeaderValue);
-            });
         }
         if (builderOptions.UseAnonymizationLogger)
         {
@@ -95,11 +88,6 @@ public class RefitClientCredentialsBuilder
         foreach (var type in DelegationHandlers)
         {
             clientBuilder.AddHttpMessageHandler((s) => (DelegatingHandler)s.GetRequiredService(type));
-        }
-
-        if (builderOptions.UseCorrelationId)
-        {
-            clientBuilder.AddHeaderPropagation();
         }
 
         extra?.Invoke(clientBuilder);
