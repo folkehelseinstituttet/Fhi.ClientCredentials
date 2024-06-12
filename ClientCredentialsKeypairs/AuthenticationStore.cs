@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using System.Reflection.PortableExecutable;
 
 namespace Fhi.ClientCredentialsKeypairs
 {

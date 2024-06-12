@@ -17,7 +17,7 @@ public class AuthenticationService : IAuthenticationService
 {
     public ClientCredentialsConfiguration Config { get; }
 
-    
+
     public AuthenticationService(ClientCredentialsConfiguration config)
     {
         Config = config;
@@ -32,6 +32,7 @@ public class AuthenticationService : IAuthenticationService
         {
             Address = Config.Authority,
             ClientId = Config.ClientId,
+            DPoPProofToken = BuildDpopAssertion(Config.Authority, Config.ClientId),
             GrantType = OidcConstants.GrantTypes.ClientCredentials,
             ClientCredentialStyle = ClientCredentialStyle.PostBody,
             Scope = Config.Scopes,
@@ -44,9 +45,35 @@ public class AuthenticationService : IAuthenticationService
         var response = await c.RequestClientCredentialsTokenAsync(cctr);
         if (response.IsError)
         {
+            if (response.Error == "use_dpop_nonce")
+            {
+                var nonce = response.DPoPNonce;
+            }
+
             throw new Exception($"Unable to get access token: {response.Error}");
         }
+
         AccessToken = response.AccessToken;
+    }
+
+    private string BuildDpopAssertion(string audience, string clientId)
+    {
+        var claims = new List<Claim>
+        {
+            new("jti", Guid.NewGuid().ToString()),
+            new("htm", "POST"),
+            new("htu", "https://helseid-sts.test.nhn.no/connect/token"),
+            new("iat", DateTime.UtcNow.Ticks.ToString()),
+        };
+
+        var credentials = new JwtSecurityToken(clientId, audience, claims, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(60), GetClientAssertionSigningCredentials());
+        credentials.Header.Remove("typ");
+        credentials.Header.Add("typ", "dpop+jwt");
+        credentials.Header.Add("jwt", new JsonWebKey(Config.PrivateKey));
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var ret = tokenHandler.WriteToken(credentials);
+        return ret;
     }
 
     private string BuildClientAssertion(string audience, string clientId)
@@ -64,6 +91,7 @@ public class AuthenticationService : IAuthenticationService
         var ret = tokenHandler.WriteToken(credentials);
         return ret;
     }
+
     private SigningCredentials GetClientAssertionSigningCredentials()
     {
         var securityKey = new JsonWebKey(Config.PrivateKey);
