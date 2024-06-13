@@ -141,7 +141,7 @@ public class AuthenticationService : IAuthenticationService
         var key = new JsonWebKey(Config.PrivateKey);
         return new JsonWebKey()
         {
-            Alg = "RS256", // is blank, should be... "RS512"?,
+            Alg = key.Alg,
             N = key.N,
             E = key.E,
             Kty = key.Kty,
