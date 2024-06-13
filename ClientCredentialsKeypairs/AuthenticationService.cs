@@ -70,7 +70,7 @@ public class AuthenticationService : IAuthenticationService
 
         AccessToken = response!.AccessToken ?? "";
     }
-
+    
     public JwtAccessToken CreateAccessToken(HttpMethod method, string url)
     {
         if (string.IsNullOrEmpty(AccessToken))
@@ -94,15 +94,18 @@ public class AuthenticationService : IAuthenticationService
     private static string? CreateDpopAth(string accessToken)
     {
         using var encryptor = SHA256.Create();
-
-        // this may or may not be correct
         var input = Encoding.ASCII.GetBytes(accessToken);
-
         var sha256 = encryptor.ComputeHash(input);
-
         return Convert.ToBase64String(sha256);
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="jti">Unique identifier for the DPoP originally used against HelseId</param>
+    /// <param name="nonce">Unique id provided by HelseId upon request. Only used during request to HelseId</param>
+    /// <param name="ath">Hash of the DpopProof. Only used when making request to an API with an AccessToken.</param>
+    /// <returns></returns>
     private string BuildDpopAssertion(string jti, string? nonce = null, string? ath = null)
     {
         var iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
@@ -157,11 +160,11 @@ public class AuthenticationService : IAuthenticationService
             new(JwtClaimTypes.JwtId, Guid.NewGuid().ToString("N")),
         };
 
-        var credentials = new JwtSecurityToken(clientId, audience, claims, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(60), GetClientAssertionSigningCredentials());
+        var signingCredentials = GetClientAssertionSigningCredentials();
+        var jwtSecurityToken = new JwtSecurityToken(clientId, audience, claims, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(60), signingCredentials);
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var ret = tokenHandler.WriteToken(credentials);
-        return ret;
+        var token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+        return token;
     }
 
     private SigningCredentials GetClientAssertionSigningCredentials()
