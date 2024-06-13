@@ -42,7 +42,7 @@ public class AuthenticationService : IAuthenticationService
         {
             Address = Config.Authority,
             ClientId = Config.ClientId,
-            DPoPProofToken = Config.UseDpop ? BuildDpopAssertion(Jti) : null,
+            DPoPProofToken = Config.UseDpop ? BuildDpopAssertion(HttpMethod.Post, Config.Authority, Jti) : null,
             GrantType = OidcConstants.GrantTypes.ClientCredentials,
             ClientCredentialStyle = ClientCredentialStyle.PostBody,
             Scope = Config.Scopes,
@@ -58,7 +58,7 @@ public class AuthenticationService : IAuthenticationService
         {
             if (response.Error == OidcConstants.TokenErrors.UseDPoPNonce)
             {
-                cctr.DPoPProofToken = BuildDpopAssertion(Jti, nonce: response.DPoPNonce ?? Guid.NewGuid().ToString());
+                cctr.DPoPProofToken = BuildDpopAssertion(HttpMethod.Post, Config.Authority, Jti, nonce: response.DPoPNonce ?? Guid.NewGuid().ToString());
                 response = await c.RequestClientCredentialsTokenAsync(cctr);
             }
 
@@ -93,7 +93,7 @@ public class AuthenticationService : IAuthenticationService
         {
             AccessToken = AccessToken,
             TokenType = "DPoP",
-            DpopProof = BuildDpopAssertion(Jti, ath: ath),
+            DpopProof = BuildDpopAssertion(method, url, Jti, ath: ath),
         };
     }
 
@@ -115,15 +115,15 @@ public class AuthenticationService : IAuthenticationService
     /// <param name="nonce">Unique id provided by HelseId upon request. Only used during request to HelseId</param>
     /// <param name="ath">Hash of the AccessToken. Only used when making request to an API with an AccessToken.</param>
     /// <returns></returns>
-    private string BuildDpopAssertion(string jti, string? nonce = null, string? ath = null)
+    private string BuildDpopAssertion(HttpMethod method, string url, string jti, string? nonce = null, string? ath = null)
     {
         var iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
         var claims = new List<Claim>
         {
             new("jti", jti),
-            new("htm", "POST"),
-            new("htu", "https://helseid-sts.test.nhn.no/connect/token"),
+            new("htm", method.ToString().ToUpperInvariant()),
+            new("htu", url),
             new("iat", iat.ToString(), ClaimValueTypes.Integer64),
         };
 
