@@ -33,19 +33,16 @@ public class AuthenticationService : IAuthenticationService
     /// </summary>
     private string Jti { get; set; } = "";
 
-    private string DpopProof { get; set; } = "";
-
     public async Task SetupToken()
     {
         Jti = Guid.NewGuid().ToString();
-        DpopProof = BuildDpopAssertion(Jti, Config.Authority, Config.ClientId);
 
         var c = new HttpClient();
         var cctr = new ClientCredentialsTokenRequest
         {
             Address = Config.Authority,
             ClientId = Config.ClientId,
-            DPoPProofToken = DpopProof,
+            DPoPProofToken = BuildDpopAssertion(Jti),
             GrantType = OidcConstants.GrantTypes.ClientCredentials,
             ClientCredentialStyle = ClientCredentialStyle.PostBody,
             Scope = Config.Scopes,
@@ -61,7 +58,7 @@ public class AuthenticationService : IAuthenticationService
         {
             if (response.Error == "use_dpop_nonce")
             {
-                cctr.Headers.Add("DPoP-Nonce", response.DPoPNonce);
+                cctr.DPoPProofToken = BuildDpopAssertion(Jti, nonce: response.DPoPNonce ?? Guid.NewGuid().ToString());
                 response = await c.RequestClientCredentialsTokenAsync(cctr);
             }
 
@@ -81,37 +78,34 @@ public class AuthenticationService : IAuthenticationService
             throw new Exception("No access token is set. Unable to create Dpop Proof.");
         }
 
-        var ath = CreateDpopAth(AccessToken, DpopProof);
+        var ath = CreateDpopAth(AccessToken);
 
         return new JwtAccessToken()
         {
             AccessToken = AccessToken,
             TokenType = "DPoP",
-            DpopProof = BuildDpopAssertion(Jti, Config.Authority, Config.ClientId, ath),
+            DpopProof = BuildDpopAssertion(Jti, ath: ath),
         };
     }
 
     /// <summary>
-    /// The ath claim should only be used in API calls. Its value should be a SHA-256 hash of the access token that is used in the Authorization header along with the DPoP proof.
+    /// Hash of the access token. The value MUST be the result of a base64url encoding (as defined in Section 2 of [RFC7515]) the SHA-256 [SHS] hash of the ASCII encoding of the associated access token's value.
     /// </summary>
-    private static string? CreateDpopAth(string accessToken, string dpopProof)
+    private static string? CreateDpopAth(string accessToken)
     {
         using var encryptor = SHA256.Create();
-        
-        // this is probably not correct
-        var input = Encoding.UTF8.GetBytes(accessToken + dpopProof);
 
-        var sha256 = encryptor.ComputeHash(Encoding.UTF8.GetBytes(accessToken + dpopProof));
+        // this may or may not be correct
+        var input = Encoding.ASCII.GetBytes(accessToken);
 
-        // they do not say how this is encoded, https://utviklerportal.nhn.no/informasjonstjenester/helseid/protokoller-og-sikkerhetsprofil/sikkerhetsprofil/docs/vedlegg/formatering_av_dpop_bevis_enmd/
+        var sha256 = encryptor.ComputeHash(input);
+
         return Convert.ToBase64String(sha256);
     }
 
-    private string BuildDpopAssertion(string jti, string audience, string clientId, string? ath = null)
+    private string BuildDpopAssertion(string jti, string? nonce = null, string? ath = null)
     {
-        var utc0 = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-        var issueTime = DateTime.UtcNow;
-        var iat = (int)issueTime.Subtract(utc0).TotalSeconds;
+        var iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
         var claims = new List<Claim>
         {
@@ -126,22 +120,28 @@ public class AuthenticationService : IAuthenticationService
             claims.Add(new("ath", ath));
         }
 
-        var credentials = new JwtSecurityToken(clientId, audience, claims, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(60), GetClientAssertionSigningCredentials());
-        credentials.Header.Remove("typ");
-        credentials.Header.Add("typ", "dpop+jwt");
-        credentials.Header.Add("jwt", BuildPopJwtToken());
+        if (nonce != null)
+        {
+            claims.Add(new("nonce", nonce));
+        }
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var ret = tokenHandler.WriteToken(credentials);
-        return ret;
+        var signingCredentials = GetClientAssertionSigningCredentials();
+
+        var jwtSecurityToken = new JwtSecurityToken(null, null, claims, null, null, signingCredentials);
+        jwtSecurityToken.Header.Remove("typ");
+        jwtSecurityToken.Header.Add("typ", "dpop+jwt");
+        jwtSecurityToken.Header.Add("jwk", GetPublicJwk());
+
+        var token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+        return token;
     }
 
-    private JsonWebKey BuildPopJwtToken()
+    private JsonWebKey GetPublicJwk()
     {
         var key = new JsonWebKey(Config.PrivateKey);
         return new JsonWebKey()
         {
-            Alg = key.Alg, // is blank, should be... "RS512"?,
+            Alg = "RS256", // is blank, should be... "RS512"?,
             N = key.N,
             E = key.E,
             Kty = key.Kty,
