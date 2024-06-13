@@ -18,8 +18,15 @@ namespace Fhi.ClientCredentialsKeypairs
         {
             if (request.Options.All(x => x.Key != AnonymousOptionKey))
             {
-                var token = await _authTokenStore.GetToken();
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                var token = await _authTokenStore.GetToken(request.Method, request.RequestUri?.AbsoluteUri ?? "");
+                if (token != null)
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue(token.TokenType, token.AccessToken);
+                    if (token.DpopProof != null)
+                    {
+                        request.Headers.TryAddWithoutValidation("DPoP", token.DpopProof);
+                    }
+                }
             }
 
             var response = await base.SendAsync(request, cancellationToken);
