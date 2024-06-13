@@ -42,7 +42,7 @@ public class AuthenticationService : IAuthenticationService
         {
             Address = Config.Authority,
             ClientId = Config.ClientId,
-            DPoPProofToken = BuildDpopAssertion(Jti),
+            DPoPProofToken = Config.UseDpop ? BuildDpopAssertion(Jti) : null,
             GrantType = OidcConstants.GrantTypes.ClientCredentials,
             ClientCredentialStyle = ClientCredentialStyle.PostBody,
             Scope = Config.Scopes,
@@ -56,7 +56,7 @@ public class AuthenticationService : IAuthenticationService
         var response = await c.RequestClientCredentialsTokenAsync(cctr);
         if (response.IsError)
         {
-            if (response.Error == "use_dpop_nonce")
+            if (response.Error == OidcConstants.TokenErrors.UseDPoPNonce)
             {
                 cctr.DPoPProofToken = BuildDpopAssertion(Jti, nonce: response.DPoPNonce ?? Guid.NewGuid().ToString());
                 response = await c.RequestClientCredentialsTokenAsync(cctr);
@@ -76,6 +76,15 @@ public class AuthenticationService : IAuthenticationService
         if (string.IsNullOrEmpty(AccessToken))
         {
             throw new Exception("No access token is set. Unable to create Dpop Proof.");
+        }
+
+        if (!Config.UseDpop)
+        {
+            return new JwtAccessToken()
+            {
+                AccessToken = AccessToken,
+                TokenType = "Bearer",
+            };
         }
 
         var ath = CreateDpopAth(AccessToken);
@@ -104,7 +113,7 @@ public class AuthenticationService : IAuthenticationService
     /// </summary>
     /// <param name="jti">Unique identifier for the DPoP originally used against HelseId</param>
     /// <param name="nonce">Unique id provided by HelseId upon request. Only used during request to HelseId</param>
-    /// <param name="ath">Hash of the DpopProof. Only used when making request to an API with an AccessToken.</param>
+    /// <param name="ath">Hash of the AccessToken. Only used when making request to an API with an AccessToken.</param>
     /// <returns></returns>
     private string BuildDpopAssertion(string jti, string? nonce = null, string? ath = null)
     {
@@ -142,6 +151,8 @@ public class AuthenticationService : IAuthenticationService
     private JsonWebKey GetPublicJwk()
     {
         var key = new JsonWebKey(Config.PrivateKey);
+
+        // TODO: Probably not correct way to get public key from private key!! FIX!
         return new JsonWebKey()
         {
             Alg = key.Alg,

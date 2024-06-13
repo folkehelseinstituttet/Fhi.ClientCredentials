@@ -4,6 +4,7 @@ namespace Fhi.ClientCredentialsKeypairs
 {
     public interface IAuthTokenStore
     {
+        [Obsolete("Use GetToken with method and URL")]
         Task<string> GetToken();
 
         Task<JwtAccessToken> GetToken(HttpMethod method, string url);
