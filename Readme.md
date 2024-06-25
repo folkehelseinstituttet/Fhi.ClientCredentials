@@ -1,10 +1,8 @@
 ﻿## Client Credentials Usage
 
-
 ## Configuration file section
 
 1. Add the following configuration section to your appsettings.json files, and populate it appropriately.
-
 
 ```json
   "ClientCredentialsConfiguration": {
