@@ -56,7 +56,7 @@ public class AuthenticationService : IAuthenticationService
         var response = await c.RequestClientCredentialsTokenAsync(cctr);
         if (response.IsError)
         {
-            if (response.Error == OidcConstants.TokenErrors.UseDPoPNonce)
+            if (Config.UseDpop && response.Error == OidcConstants.TokenErrors.UseDPoPNonce)
             {
                 cctr.DPoPProofToken = BuildDpopAssertion(HttpMethod.Post, Config.Authority, Jti, nonce: response.DPoPNonce ?? Guid.NewGuid().ToString());
                 response = await c.RequestClientCredentialsTokenAsync(cctr);
