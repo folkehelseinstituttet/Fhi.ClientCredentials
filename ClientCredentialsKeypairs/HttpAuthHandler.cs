@@ -6,7 +6,7 @@ namespace Fhi.ClientCredentialsKeypairs
     {
         public const string AnonymousOptionKey = "Anonymous";
         public const string BearerSchemeType = "Bearer";
-        public const string DpopSchemeType = "DPOP";
+        public const string DpopSchemeType = "DPoP";
         public const string DpopHeaderName = "DPoP";
 
         private readonly IAuthTokenStore _authTokenStore;

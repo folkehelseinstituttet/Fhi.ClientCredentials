@@ -3,7 +3,7 @@
 /// <summary>
 /// Used in tests by different repos..
 /// </summary>
-[Obsolete("Create your own implementation of IAuthTokenStore")]
+[Obsolete("Create your own implementation of IAuthTokenStore for testing purposes.")]
 public class AuthenticationStoreDefault : IAuthTokenStore
 {
     private readonly string token;
