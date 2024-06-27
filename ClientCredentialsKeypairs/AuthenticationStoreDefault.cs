@@ -1,5 +1,9 @@
 ﻿namespace Fhi.ClientCredentialsKeypairs;
 
+/// <summary>
+/// Used in tests by different repos..
+/// </summary>
+[Obsolete("Create your own implementation of IAuthTokenStore")]
 public class AuthenticationStoreDefault : IAuthTokenStore
 {
     private readonly string token;

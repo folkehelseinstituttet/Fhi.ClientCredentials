@@ -139,7 +139,7 @@ public class AuthenticationService : IAuthenticationService
 
         var signingCredentials = GetClientAssertionSigningCredentials();
 
-        var jwtSecurityToken = new JwtSecurityToken(null, null, claims, null, null, signingCredentials);
+        var jwtSecurityToken = new JwtSecurityToken(claims: claims, signingCredentials: signingCredentials);
         jwtSecurityToken.Header.Remove("typ");
         jwtSecurityToken.Header.Add("typ", "dpop+jwt");
         jwtSecurityToken.Header.Add("jwk", GetPublicJwk());
@@ -150,16 +150,7 @@ public class AuthenticationService : IAuthenticationService
 
     private JsonWebKey GetPublicJwk()
     {
-        var key = new JsonWebKey(Config.PrivateKey);
-
-        // TODO: Probably not correct way to get public key from private key!! FIX!
-        return new JsonWebKey()
-        {
-            Alg = key.Alg,
-            N = key.N,
-            E = key.E,
-            Kty = key.Kty,
-        };
+        return new JsonWebKey(Config.PrivateKey).GetPublicKey();
     }
 
     private string BuildClientAssertion(string audience, string clientId)
