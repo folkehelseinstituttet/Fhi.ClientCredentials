@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Fhi.ClientCredentialsUsingSecrets;
+using Microsoft.Extensions.Configuration;
 
-namespace Fhi.ClientCredentialsUsingSecrets;
+namespace Fhi.ClientCredentialsSecrets;
 
 public static class ConfigurationExtensions
 {

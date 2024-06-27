@@ -21,9 +21,18 @@ public class AuthenticationService : IAuthenticationService
 {
     public ClientCredentialsConfiguration Config { get; }
 
+    public HttpClient Client { get; }
+
     public AuthenticationService(ClientCredentialsConfiguration config)
     {
         Config = config;
+        Client = new HttpClient();
+    }
+
+    public AuthenticationService(HttpClient client, ClientCredentialsConfiguration config)
+    {
+        Config = config;
+        Client = client;
     }
 
     public string AccessToken { get; private set; } = "";
@@ -37,7 +46,6 @@ public class AuthenticationService : IAuthenticationService
     {
         Jti = Guid.NewGuid().ToString();
 
-        var c = new HttpClient();
         var cctr = new ClientCredentialsTokenRequest
         {
             Address = Config.Authority,
@@ -53,13 +61,13 @@ public class AuthenticationService : IAuthenticationService
             }
         };
 
-        var response = await c.RequestClientCredentialsTokenAsync(cctr);
+        var response = await Client.RequestClientCredentialsTokenAsync(cctr);
         if (response.IsError)
         {
             if (Config.UseDpop && response.Error == OidcConstants.TokenErrors.UseDPoPNonce)
             {
                 cctr.DPoPProofToken = BuildDpopAssertion(HttpMethod.Post, Config.Authority, Jti, nonce: response.DPoPNonce ?? Guid.NewGuid().ToString());
-                response = await c.RequestClientCredentialsTokenAsync(cctr);
+                response = await Client.RequestClientCredentialsTokenAsync(cctr);
             }
 
             if (response.IsError)
