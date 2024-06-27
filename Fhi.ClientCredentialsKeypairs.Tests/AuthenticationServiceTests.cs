@@ -13,7 +13,7 @@ public class AuthenticationServiceTests
         var service = GetAuthenticationService(clientUseDpop: false, serverUseDpop: false);
         await service.SetupToken();
 
-        var token = service.CreateAccessToken(HttpMethod.Get, "https://test/help");
+        var token = service.GetAccessToken(HttpMethod.Get, "https://test/help");
         Assert.That(token.AccessToken, Is.EqualTo("BearerToken"));
     }
 
@@ -23,7 +23,7 @@ public class AuthenticationServiceTests
         var service = GetAuthenticationService(clientUseDpop: true, serverUseDpop: true);
         await service.SetupToken();
 
-        var token = service.CreateAccessToken(HttpMethod.Get, "https://test/help");
+        var token = service.GetAccessToken(HttpMethod.Get, "https://test/help");
         Assert.That(token.AccessToken, Is.EqualTo("DpopToken"));
     }
 
@@ -33,7 +33,7 @@ public class AuthenticationServiceTests
         var service = GetAuthenticationService(clientUseDpop: true, serverUseDpop: false);
         await service.SetupToken();
 
-        var token = service.CreateAccessToken(HttpMethod.Get, "https://test/help");
+        var token = service.GetAccessToken(HttpMethod.Get, "https://test/help");
         Assert.That(token.AccessToken, Is.EqualTo("BearerToken"));
     }
 

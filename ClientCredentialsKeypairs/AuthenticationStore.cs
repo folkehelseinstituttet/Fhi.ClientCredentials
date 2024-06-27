@@ -4,7 +4,7 @@ namespace Fhi.ClientCredentialsKeypairs
 {
     public interface IAuthTokenStore
     {
-        [Obsolete("Use GetToken with method and URL")]
+        [Obsolete("Use GetToken(HttpMethod method, string url)")]
         Task<string> GetToken();
 
         Task<JwtAccessToken> GetToken(HttpMethod method, string url);
@@ -23,6 +23,7 @@ namespace Fhi.ClientCredentialsKeypairs
             this.tokenDateTime = DateTime.MinValue;
         }
 
+        [Obsolete("Use GetToken(HttpMethod method, string url)")]
         public async Task<string> GetToken()
         {
             if ((DateTime.Now - tokenDateTime).TotalMinutes > refreshTokenAfterMinutes)
@@ -40,7 +41,7 @@ namespace Fhi.ClientCredentialsKeypairs
                 await Refresh();
             }
 
-            return authenticationService.CreateAccessToken(method, url);
+            return authenticationService.GetAccessToken(method, url);
         }
 
         private async Task Refresh()

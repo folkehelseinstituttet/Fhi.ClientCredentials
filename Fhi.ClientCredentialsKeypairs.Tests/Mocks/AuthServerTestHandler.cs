@@ -1,6 +1,4 @@
-﻿using Fhi.ClientCredentialsKeypairs;
-
-namespace Fhi.ClientCredentialsKeypairs.Tests.Mocks;
+﻿namespace Fhi.ClientCredentialsKeypairs.Tests.Mocks;
 
 public class AuthServerTestHandler : HttpMessageHandler
 {

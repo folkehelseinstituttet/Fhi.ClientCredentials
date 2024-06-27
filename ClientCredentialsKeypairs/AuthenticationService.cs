@@ -10,9 +10,10 @@ namespace Fhi.ClientCredentialsKeypairs;
 
 public interface IAuthenticationService
 {
+    [Obsolete("Use GetAccessToken(HttpMethod method, string url)")]
     string AccessToken { get; }
 
-    JwtAccessToken CreateAccessToken(HttpMethod method, string url);
+    JwtAccessToken GetAccessToken(HttpMethod method, string url);
 
     Task SetupToken();
 }
@@ -35,22 +36,25 @@ public class AuthenticationService : IAuthenticationService
         Client = client;
     }
 
-    public string AccessToken { get; private set; } = "";
+    [Obsolete("Use GetAccessToken(HttpMethod method, string url)")]
+    public string AccessToken => _accessToken;
+
+    private string _accessToken { get; set; } = "";
 
     /// <summary>
     /// The jti claim must be a unique value that identifies this particular JWT.
     /// </summary>
-    private string Jti { get; set; } = "";
+    private string _jti { get; set; } = "";
 
     public async Task SetupToken()
     {
-        Jti = Guid.NewGuid().ToString();
+        _jti = Guid.NewGuid().ToString();
 
         var cctr = new ClientCredentialsTokenRequest
         {
             Address = Config.Authority,
             ClientId = Config.ClientId,
-            DPoPProofToken = Config.UseDpop ? BuildDpopAssertion(HttpMethod.Post, Config.Authority, Jti) : null,
+            DPoPProofToken = Config.UseDpop ? BuildDpopAssertion(HttpMethod.Post, Config.Authority, _jti) : null,
             GrantType = OidcConstants.GrantTypes.ClientCredentials,
             ClientCredentialStyle = ClientCredentialStyle.PostBody,
             Scope = Config.Scopes,
@@ -66,7 +70,7 @@ public class AuthenticationService : IAuthenticationService
         {
             if (Config.UseDpop && response.Error == OidcConstants.TokenErrors.UseDPoPNonce)
             {
-                cctr.DPoPProofToken = BuildDpopAssertion(HttpMethod.Post, Config.Authority, Jti, nonce: response.DPoPNonce ?? Guid.NewGuid().ToString());
+                cctr.DPoPProofToken = BuildDpopAssertion(HttpMethod.Post, Config.Authority, _jti, nonce: response.DPoPNonce ?? Guid.NewGuid().ToString());
                 response = await Client.RequestClientCredentialsTokenAsync(cctr);
             }
 
@@ -76,12 +80,12 @@ public class AuthenticationService : IAuthenticationService
             }
         }
 
-        AccessToken = response!.AccessToken ?? "";
+        _accessToken = response!.AccessToken ?? "";
     }
     
-    public JwtAccessToken CreateAccessToken(HttpMethod method, string url)
+    public JwtAccessToken GetAccessToken(HttpMethod method, string url)
     {
-        if (string.IsNullOrEmpty(AccessToken))
+        if (string.IsNullOrEmpty(_accessToken))
         {
             throw new Exception("No access token is set. Unable to create Dpop Proof.");
         }
@@ -90,18 +94,18 @@ public class AuthenticationService : IAuthenticationService
         {
             return new JwtAccessToken()
             {
-                AccessToken = AccessToken,
+                AccessToken = _accessToken,
                 TokenType = "Bearer",
             };
         }
 
-        var ath = CreateDpopAth(AccessToken);
+        var ath = CreateDpopAth(_accessToken);
 
         return new JwtAccessToken()
         {
-            AccessToken = AccessToken,
+            AccessToken = _accessToken,
             TokenType = "DPoP",
-            DpopProof = BuildDpopAssertion(method, url, Jti, ath: ath),
+            DpopProof = BuildDpopAssertion(method, url, _jti, ath: ath),
         };
     }
 

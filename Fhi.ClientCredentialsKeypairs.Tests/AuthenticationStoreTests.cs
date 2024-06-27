@@ -44,7 +44,7 @@ public class AuthenticationStoreTests
 
         public string AccessToken => _accessToken ?? throw new Exception("No access token avalible");
 
-        public JwtAccessToken CreateAccessToken(HttpMethod method, string url)
+        public JwtAccessToken GetAccessToken(HttpMethod method, string url)
         {
             return new JwtAccessToken()
             {
