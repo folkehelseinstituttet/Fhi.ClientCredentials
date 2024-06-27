@@ -14,11 +14,11 @@ public class OauthTestServerHandler : HttpMessageHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var headers = request.Headers
-            .SelectMany(x => x.Value.Select(y => new { Key = x.Key, Value = y }))
+            .SelectMany(x => x.Value.Select(y => new { x.Key, Value = y }))
             .ToDictionary(x => x.Key, x => x.Value);
         headers.TryGetValue("DPoP", out var proof);
 
-        var content = await request.Content.ReadAsStringAsync();
+        var content = await request.Content!.ReadAsStringAsync();
         var parts = content
             .Split('&')
             .Select(x => new { Key = x.Split('=')[0], Value = x.Split('=')[1] })
